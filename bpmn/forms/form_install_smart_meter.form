@@ -1,0 +1,32 @@
+{
+  "components": [
+    {
+      "text": "# Bidirectional Smart Meter Deployment (iMSys)\nEnter installed smart meter serial number and initial calibration reading.",
+      "type": "text",
+      "id": "Field_header_meter"
+    },
+    {
+      "label": "Smart Meter Serial Number",
+      "type": "textfield",
+      "id": "Field_meter_serial",
+      "key": "smartMeterSerial",
+      "defaultValue": "1EMH0039281740"
+    },
+    {
+      "label": "Initial Meter Reading (kWh)",
+      "type": "number",
+      "id": "Field_meter_kwh",
+      "key": "initialReadingKwh",
+      "defaultValue": 0.0
+    }
+  ],
+  "type": "default",
+  "id": "form_install_smart_meter",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.50.1"
+  },
+  "schemaVersion": 16
+}

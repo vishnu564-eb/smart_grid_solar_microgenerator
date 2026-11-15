@@ -1,0 +1,46 @@
+{
+  "components": [
+    {
+      "text": "# Technical Documentation & Solar Microgenerator Request\nPlease enter system parameters and feeder characteristics for grid feasibility assessment.",
+      "type": "text",
+      "id": "Field_header_prep"
+    },
+    {
+      "label": "Certified Solar Installer",
+      "type": "textfield",
+      "id": "Field_inst_name",
+      "key": "installerName",
+      "defaultValue": "Hans Mueller Solar GmbH"
+    },
+    {
+      "label": "Solar PV Peak Capacity (kWp) [Max 30 kWp for simplified microgenerator]",
+      "type": "number",
+      "id": "Field_cap_kwp",
+      "key": "systemCapacityKwp",
+      "defaultValue": 9.8
+    },
+    {
+      "label": "Local Transformer Utilization (%) [Must be <= 80% to approve]",
+      "type": "number",
+      "id": "Field_trans_load",
+      "key": "transformerUtilizationPercent",
+      "defaultValue": 65
+    },
+    {
+      "label": "Feeder Voltage Rise (%) [Must be <= 3.0% to approve]",
+      "type": "number",
+      "id": "Field_volt_rise",
+      "key": "voltageRisePercent",
+      "defaultValue": 1.8
+    }
+  ],
+  "type": "default",
+  "id": "form_prepare_technical_docs",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.50.1"
+  },
+  "schemaVersion": 16
+}

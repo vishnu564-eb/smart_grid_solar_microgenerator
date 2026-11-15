@@ -1,0 +1,32 @@
+{
+  "components": [
+    {
+      "text": "# PV Installation Confirmation\nConfirm solar panel mounting, cabling, and inverter connection.",
+      "type": "text",
+      "id": "Field_header_inst"
+    },
+    {
+      "label": "Inverter Manufacturer & Model",
+      "type": "textfield",
+      "id": "Field_inv_model",
+      "key": "inverterModel",
+      "defaultValue": "SMA Sunny Tripower 10.0"
+    },
+    {
+      "label": "Physical Installation & Wiring Complete",
+      "type": "checkbox",
+      "id": "Field_inst_comp",
+      "key": "installationComplete",
+      "defaultValue": true
+    }
+  ],
+  "type": "default",
+  "id": "form_install_pv_modules",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.50.1"
+  },
+  "schemaVersion": 16
+}

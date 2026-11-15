@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+             xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
+             xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
+             id="Definitions_GridCapacityDMN"
+             name="Grid Feasibility Decision Model"
+             namespace="http://camunda.org/schema/1.0/dmn"
+             exporter="Camunda Modeler"
+             exporterVersion="5.50.1">
+  <decision id="Decision_GridFeasibility" name="Grid Capacity &amp; Voltage Feasibility Assessment">
+    <decisionTable id="DecisionTable_GridFeasibility" hitPolicy="FIRST">
+      <input id="Input_SystemCapacity" label="PV Peak Capacity (kWp)">
+        <inputExpression id="InputExpr_SystemCapacity" typeRef="number">
+          <text>systemCapacityKwp</text>
+        </inputExpression>
+      </input>
+      <input id="Input_TransformerLoad" label="Transformer Utilization (%)">
+        <inputExpression id="InputExpr_TransformerLoad" typeRef="number">
+          <text>transformerUtilizationPercent</text>
+        </inputExpression>
+      </input>
+      <input id="Input_VoltageRise" label="Feeder Voltage Rise (%)">
+        <inputExpression id="InputExpr_VoltageRise" typeRef="number">
+          <text>voltageRisePercent</text>
+        </inputExpression>
+      </input>
+      <output id="Output_GridCapacity" label="Grid Capacity Available" name="gridCapacityAvailable" typeRef="boolean" />
+      <output id="Output_ApprovalStatus" label="Approval Status" name="approvalStatus" typeRef="string">
+        <outputValues id="OutputValues_ApprovalStatus">
+          <text>"APPROVED","REJECTED"</text>
+        </outputValues>
+      </output>
+      <output id="Output_RejectionReason" label="Assessment Remarks" name="rejectionReason" typeRef="string" />
+      <rule id="Rule_Approved_Optimal">
+        <description>All parameters within safe VDE-AR-N 4105 limits</description>
+        <inputEntry id="IE_1_1">
+          <text>&lt;= 30</text>
+        </inputEntry>
+        <inputEntry id="IE_1_2">
+          <text>&lt;= 80</text>
+        </inputEntry>
+        <inputEntry id="IE_1_3">
+          <text>&lt;= 3.0</text>
+        </inputEntry>
+        <outputEntry id="OE_1_1">
+          <text>true</text>
+        </outputEntry>
+        <outputEntry id="OE_1_2">
+          <text>"APPROVED"</text>
+        </outputEntry>
+        <outputEntry id="OE_1_3">
+          <text>"Grid capacity and voltage compliance confirmed. Approved for connection."</text>
+        </outputEntry>
+      </rule>
+      <rule id="Rule_Reject_TransformerOverload">
+        <description>Transformer utilization exceeds 80%</description>
+        <inputEntry id="IE_2_1">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="IE_2_2">
+          <text>&gt; 80</text>
+        </inputEntry>
+        <inputEntry id="IE_2_3">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="OE_2_1">
+          <text>false</text>
+        </outputEntry>
+        <outputEntry id="OE_2_2">
+          <text>"REJECTED"</text>
+        </outputEntry>
+        <outputEntry id="OE_2_3">
+          <text>"Distribution transformer loading exceeds 80% thermal safety rating."</text>
+        </outputEntry>
+      </rule>
+      <rule id="Rule_Reject_VoltageRise">
+        <description>Voltage rise exceeds 3.0% threshold</description>
+        <inputEntry id="IE_3_1">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="IE_3_2">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="IE_3_3">
+          <text>&gt; 3.0</text>
+        </inputEntry>
+        <outputEntry id="OE_3_1">
+          <text>false</text>
+        </outputEntry>
+        <outputEntry id="OE_3_2">
+          <text>"REJECTED"</text>
+        </outputEntry>
+        <outputEntry id="OE_3_3">
+          <text>"Feeder voltage rise exceeds statutory +3% threshold under EN 50160."</text>
+        </outputEntry>
+      </rule>
+      <rule id="Rule_Reject_CapacityTooHigh">
+        <description>Microgenerator peak capacity exceeds 30 kWp</description>
+        <inputEntry id="IE_4_1">
+          <text>&gt; 30</text>
+        </inputEntry>
+        <inputEntry id="IE_4_2">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="IE_4_3">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="OE_4_1">
+          <text>false</text>
+        </outputEntry>
+        <outputEntry id="OE_4_2">
+          <text>"REJECTED"</text>
+        </outputEntry>
+        <outputEntry id="OE_4_3">
+          <text>"Peak capacity exceeds 30 kWp microgenerator threshold. Requires medium voltage study."</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_GridFeasibility">
+      <dmndi:DMNShape id="DMNShape_Decision_GridFeasibility" dmnElementRef="Decision_GridFeasibility">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_Project25_Solar" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.50.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:error id="Error_RestFailure" name="ERR_REST_FAIL" errorCode="ERR_REST_FAIL" />
+  <bpmn:collaboration id="Collaboration_SolarProject">
+    <bpmn:participant id="Pool_SolarGrid" name="Project 25: Smart Grid Solar Microgenerator Connection &#38; Commissioning (VDE-AR-N 4105)" processRef="Process_Applicant" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Applicant" name="Solar Microgenerator Application &#38; Installation" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_Solar">
+      <bpmn:lane id="Lane_DSO" name="Distribution System Operator (Netze BW DSO)">
+        <bpmn:flowNodeRef>task_DSO_Validate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_DSO_AssessGrid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_DSO_Feasible</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_DSO_VerifyProtocols</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_DSO_DeployMeter</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_DSO_Activate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_DSO_Complete</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_DSO_Approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_DSO_Reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_DSO_Rejected</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Applicant" name="Applicant / Certified Solar Installer (Anlagenbetreiber)">
+        <bpmn:flowNodeRef>start_App</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_App_Prepare</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_App_Submit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_App_HandleRestErr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_App_RestFail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_App_Escalate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_App_Escalated</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_App_Install</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_App_SafetyCheck</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_App_SubmitCompletion</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>gw_Parallel_Commission</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_App_Done</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>task_App_MaStR</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>bnd_timer_sla</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>bnd_err_submit</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="start_App" name="Solar PV Project&#10;Planned">
+      <bpmn:outgoing>f_start_to_prep</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="task_App_Prepare" name="Prepare Technical&#10;Documentation">
+      <bpmn:documentation>Prepare inverter technical specifications, peak capacity (kWp), site layout, electrical single-line diagram, and installer license accreditation.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition candidateGroups="installer" />
+        <zeebe:formDefinition formId="form_prepare_technical_docs" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_start_to_prep</bpmn:incoming>
+      <bpmn:outgoing>f_prep_to_submit</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="task_App_Submit" name="Submit Digital&#10;Connection Request&#10;(REST API)">
+      <bpmn:documentation>Submit digital Netzanfrage via DSO REST portal pursuant to Section 8 EEG statutory requirements.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="submit-connection-request" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_prep_to_submit</bpmn:incoming>
+      <bpmn:outgoing>f_submit_to_validate</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:scriptTask id="task_App_HandleRestErr" name="Handle REST API&#10;Error &#38; Retry">
+      <bpmn:documentation>Log transmission exception and queue connection request for automatic REST retry.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:script expression="=true" resultVariable="errorHandled" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_err_to_handle</bpmn:incoming>
+      <bpmn:outgoing>f_handled_to_end</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="end_App_RestFail" name="Submission Error&#10;Logged">
+      <bpmn:incoming>f_handled_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:scriptTask id="task_App_Escalate" name="Send Response SLA&#10;Escalation Notice">
+      <bpmn:documentation>Transmit automated inquiry reminder to DSO when processing exceeds statutory 7-day evaluation window.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:script expression="=true" resultVariable="escalationSent" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_timer_to_escalate</bpmn:incoming>
+      <bpmn:outgoing>f_escalate_to_end</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="end_App_Escalated" name="SLA Escalation&#10;Dispatched">
+      <bpmn:incoming>f_escalate_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:scriptTask id="task_DSO_Validate" name="Validate Application&#10;Documents">
+      <bpmn:documentation>Verify complete submission of electrical schematic, inverter certificate, and installer accreditation pursuant to Netze BW criteria.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:script expression="={&#10;          documentsValid: true,&#10;          validationTimestamp: &#34;2026-11-15T19:00:00Z&#34;&#10;        }" resultVariable="dsoValidation" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_submit_to_validate</bpmn:incoming>
+      <bpmn:outgoing>f_validate_to_assess</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:businessRuleTask id="task_DSO_AssessGrid" name="Perform Grid Capacity&#10;&#38; Voltage Assessment&#10;(DMN)">
+      <bpmn:documentation>Execute DMN decision rules: assess low-voltage cable loading, transformer utilization limit (&lt;= 80%), and statutory voltage rise (&lt;= 3.0%).</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:calledDecision decisionId="Decision_GridFeasibility" resultVariable="gridAssessmentResult" />
+        <zeebe:ioMapping>
+          <zeebe:output source="=gridAssessmentResult.gridCapacityAvailable" target="gridCapacityAvailable" />
+          <zeebe:output source="=gridAssessmentResult.approvalStatus" target="approvalStatus" />
+          <zeebe:output source="=gridAssessmentResult.rejectionReason" target="rejectionReason" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_validate_to_assess</bpmn:incoming>
+      <bpmn:outgoing>f_assess_to_gw</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:exclusiveGateway id="gw_DSO_Feasible" name="Grid Capacity &#38;&#10;Voltage Feasible?" default="f_gw_to_approve">
+      <bpmn:incoming>f_assess_to_gw</bpmn:incoming>
+      <bpmn:outgoing>f_gw_to_approve</bpmn:outgoing>
+      <bpmn:outgoing>f_gw_to_reject</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="task_App_Install" name="Install Solar Panels&#10;&#38; Inverter">
+      <bpmn:documentation>Physical mounting of solar PV modules, DC cable routing, inverter connection, and AC disconnect isolation switch.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition candidateGroups="installer" />
+        <zeebe:formDefinition formId="form_install_pv_modules" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_approve_to_install</bpmn:incoming>
+      <bpmn:outgoing>f_install_to_safety</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="task_App_SafetyCheck" name="Verify VDE-AR-N 4105&#10;Safety Compliance">
+      <bpmn:documentation>Conduct mandatory grid safety protection tests: anti-islanding trip, frequency window (47.5 - 51.5 Hz), and reactive power Q(U).</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition candidateGroups="certifiedElectrician" />
+        <zeebe:formDefinition formId="form_verify_safety_compliance" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_install_to_safety</bpmn:incoming>
+      <bpmn:outgoing>f_safety_to_completion</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:scriptTask id="task_App_SubmitCompletion" name="Submit Completion&#10;Notification&#10;(Fertigmeldung)">
+      <bpmn:documentation>Transmit signed commissioning protocol (Inbetriebsetzungsprotokoll E.8) and VDE safety certificate to Netze BW.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:script expression="={&#10;          completionSubmitted: true,&#10;          fertigmeldungDate: &#34;2026-11-15T19:15:00Z&#34;&#10;        }" resultVariable="completionPayload" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_safety_to_completion</bpmn:incoming>
+      <bpmn:outgoing>f_completion_to_split</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:parallelGateway id="gw_Parallel_Commission" name="Parallel Grid Energization&#10;&#38; MaStR Registration">
+      <bpmn:incoming>f_completion_to_split</bpmn:incoming>
+      <bpmn:outgoing>f_split_to_dso_verify</bpmn:outgoing>
+      <bpmn:outgoing>f_split_to_mastr</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:userTask id="task_DSO_VerifyProtocols" name="Verify Commissioning&#10;Documents &#38; Protocols">
+      <bpmn:documentation>Review E.8 commissioning protocols, electrician certificates, and anti-islanding test logs.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition candidateGroups="dso" />
+        <zeebe:formDefinition formId="form_verify_commissioning_protocols" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_split_to_dso_verify</bpmn:incoming>
+      <bpmn:outgoing>f_dso_verify_to_meter</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:scriptTask id="task_DSO_DeployMeter" name="Arrange Bidirectional&#10;Smart Meter (iMSys)">
+      <bpmn:documentation>Dispatch field technician or arrange installation of intelligent bidirectional smart metering system (iMSys) with CLS interface.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:script expression="={&#10;          smartMeterInstalled: true,&#10;          smartMeterId: &#34;IMS-BW-2026-99214&#34;&#10;        }" resultVariable="meteringData" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_dso_verify_to_meter</bpmn:incoming>
+      <bpmn:outgoing>f_meter_to_activate</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="task_DSO_Activate" name="Activate Connection&#10;&#38; Energize Grid">
+      <bpmn:documentation>Energize Point of Common Coupling, synchronize solar inverter with distribution feeder, and activate telemetry.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:script expression="={&#10;          gridEnergized: true,&#10;          connectionStatus: &#34;ACTIVE&#34;&#10;        }" resultVariable="activationData" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_meter_to_activate</bpmn:incoming>
+      <bpmn:outgoing>f_activate_to_end</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="end_DSO_Complete" name="Microgenerator Active&#10;in Smart Grid">
+      <bpmn:incoming>f_activate_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="end_App_Done" name="Solar PV Connected&#10;&#38; Feed-In Active">
+      <bpmn:incoming>f_mastr_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="task_App_MaStR" name="Register System in&#10;Federal MaStR Portal">
+      <bpmn:documentation>Official registration of microgenerator and location units in the German Bundesnetzagentur Marktstammdatenregister (MaStR) within statutory 1-month period.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition candidateGroups="applicant" />
+        <zeebe:formDefinition formId="form_mastr_registration" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_split_to_mastr</bpmn:incoming>
+      <bpmn:outgoing>f_mastr_to_end</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:scriptTask id="task_DSO_Approve" name="Issue Grid Approval&#10;(Netzanschlusszusage)">
+      <bpmn:documentation>Dispatch legally binding Netzanschlusszusage specifying Point of Common Coupling (PCC) and metering deployment terms.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:script expression="={&#10;          gridApproved: true,&#10;          approvalTimestamp: &#34;2026-11-15T19:05:00Z&#34;&#10;        }" resultVariable="approvalDetails" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_gw_to_approve</bpmn:incoming>
+      <bpmn:outgoing>f_approve_to_install</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="task_DSO_Reject" name="Issue Technical&#10;Rejection Notice">
+      <bpmn:documentation>Issue technical rejection notice detailing feeder bottleneck or transformer overload with grid reinforcement roadmap.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:script expression="={&#10;          gridApproved: false,&#10;          rejectionIssued: true&#10;        }" resultVariable="rejectionDetails" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>f_gw_to_reject</bpmn:incoming>
+      <bpmn:outgoing>f_reject_to_end</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="end_DSO_Rejected" name="Connection Request&#10;Rejected">
+      <bpmn:incoming>f_reject_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:boundaryEvent id="bnd_timer_sla" name="7-Day SLA&#10;Timer" cancelActivity="false" attachedToRef="task_App_Submit">
+      <bpmn:outgoing>f_timer_to_escalate</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerDef_SLA">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P7D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="bnd_err_submit" name="REST API&#10;Error" attachedToRef="task_App_Submit">
+      <bpmn:outgoing>f_err_to_handle</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorDef_REST" errorRef="Error_RestFailure" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="f_start_to_prep" sourceRef="start_App" targetRef="task_App_Prepare" />
+    <bpmn:sequenceFlow id="f_prep_to_submit" sourceRef="task_App_Prepare" targetRef="task_App_Submit" />
+    <bpmn:sequenceFlow id="f_submit_to_validate" sourceRef="task_App_Submit" targetRef="task_DSO_Validate" />
+    <bpmn:sequenceFlow id="f_err_to_handle" sourceRef="bnd_err_submit" targetRef="task_App_HandleRestErr" />
+    <bpmn:sequenceFlow id="f_handled_to_end" sourceRef="task_App_HandleRestErr" targetRef="end_App_RestFail" />
+    <bpmn:sequenceFlow id="f_timer_to_escalate" sourceRef="bnd_timer_sla" targetRef="task_App_Escalate" />
+    <bpmn:sequenceFlow id="f_escalate_to_end" sourceRef="task_App_Escalate" targetRef="end_App_Escalated" />
+    <bpmn:sequenceFlow id="f_validate_to_assess" sourceRef="task_DSO_Validate" targetRef="task_DSO_AssessGrid" />
+    <bpmn:sequenceFlow id="f_assess_to_gw" sourceRef="task_DSO_AssessGrid" targetRef="gw_DSO_Feasible" />
+    <bpmn:sequenceFlow id="f_gw_to_approve" name="Approved&#10;(Capacity &#38; Voltage OK)" sourceRef="gw_DSO_Feasible" targetRef="task_DSO_Approve" />
+    <bpmn:sequenceFlow id="f_gw_to_reject" name="Rejected&#10;(Grid Bottleneck)" sourceRef="gw_DSO_Feasible" targetRef="task_DSO_Reject">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=approvalStatus = "REJECTED"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="f_approve_to_install" sourceRef="task_DSO_Approve" targetRef="task_App_Install" />
+    <bpmn:sequenceFlow id="f_install_to_safety" sourceRef="task_App_Install" targetRef="task_App_SafetyCheck" />
+    <bpmn:sequenceFlow id="f_safety_to_completion" sourceRef="task_App_SafetyCheck" targetRef="task_App_SubmitCompletion" />
+    <bpmn:sequenceFlow id="f_completion_to_split" sourceRef="task_App_SubmitCompletion" targetRef="gw_Parallel_Commission" />
+    <bpmn:sequenceFlow id="f_split_to_dso_verify" name="DSO Commissioning" sourceRef="gw_Parallel_Commission" targetRef="task_DSO_VerifyProtocols" />
+    <bpmn:sequenceFlow id="f_split_to_mastr" name="MaStR Portal" sourceRef="gw_Parallel_Commission" targetRef="task_App_MaStR" />
+    <bpmn:sequenceFlow id="f_dso_verify_to_meter" sourceRef="task_DSO_VerifyProtocols" targetRef="task_DSO_DeployMeter" />
+    <bpmn:sequenceFlow id="f_meter_to_activate" sourceRef="task_DSO_DeployMeter" targetRef="task_DSO_Activate" />
+    <bpmn:sequenceFlow id="f_activate_to_end" sourceRef="task_DSO_Activate" targetRef="end_DSO_Complete" />
+    <bpmn:sequenceFlow id="f_mastr_to_end" sourceRef="task_App_MaStR" targetRef="end_App_Done" />
+    <bpmn:sequenceFlow id="f_reject_to_end" sourceRef="task_DSO_Reject" targetRef="end_DSO_Rejected" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Solar">
+    <bpmndi:BPMNPlane id="BPMNPlane_Solar" bpmnElement="Collaboration_SolarProject">
+      <bpmndi:BPMNShape id="sh_Pool_SolarGrid" bpmnElement="Pool_SolarGrid" isHorizontal="true">
+        <dc:Bounds x="155" y="80" width="2320" height="600" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_Lane_DSO" bpmnElement="Lane_DSO" isHorizontal="true">
+        <dc:Bounds x="185" y="360" width="2290" height="320" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_Lane_Applicant" bpmnElement="Lane_Applicant" isHorizontal="true">
+        <dc:Bounds x="185" y="80" width="2290" height="280" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_start_App" bpmnElement="start_App">
+        <dc:Bounds x="227" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="205" y="215" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_App_Prepare" bpmnElement="task_App_Prepare">
+        <dc:Bounds x="315" y="150" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_App_Submit" bpmnElement="task_App_Submit">
+        <dc:Bounds x="495" y="150" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_App_HandleRestErr" bpmnElement="task_App_HandleRestErr">
+        <dc:Bounds x="665" y="260" width="130" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_end_App_RestFail" bpmnElement="end_App_RestFail">
+        <dc:Bounds x="827" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="803" y="315" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_App_Escalate" bpmnElement="task_App_Escalate">
+        <dc:Bounds x="345" y="260" width="120" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_end_App_Escalated" bpmnElement="end_App_Escalated">
+        <dc:Bounds x="257" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="238" y="315" width="75" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_DSO_Validate" bpmnElement="task_DSO_Validate">
+        <dc:Bounds x="495" y="460" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_DSO_AssessGrid" bpmnElement="task_DSO_AssessGrid">
+        <dc:Bounds x="685" y="460" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_gw_DSO_Feasible" bpmnElement="gw_DSO_Feasible" isMarkerVisible="true">
+        <dc:Bounds x="890" y="475" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="871" y="438" width="88" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_App_Install" bpmnElement="task_App_Install">
+        <dc:Bounds x="1165" y="150" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_App_SafetyCheck" bpmnElement="task_App_SafetyCheck">
+        <dc:Bounds x="1345" y="150" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_App_SubmitCompletion" bpmnElement="task_App_SubmitCompletion">
+        <dc:Bounds x="1525" y="150" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_gw_Parallel_Commission" bpmnElement="gw_Parallel_Commission">
+        <dc:Bounds x="1720" y="165" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1714" y="87" width="62" height="53" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_DSO_VerifyProtocols" bpmnElement="task_DSO_VerifyProtocols">
+        <dc:Bounds x="1775" y="460" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_DSO_DeployMeter" bpmnElement="task_DSO_DeployMeter">
+        <dc:Bounds x="1965" y="460" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_DSO_Activate" bpmnElement="task_DSO_Activate">
+        <dc:Bounds x="2155" y="460" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_end_DSO_Complete" bpmnElement="end_DSO_Complete">
+        <dc:Bounds x="2347" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2328" y="525" width="74" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_end_App_Done" bpmnElement="end_App_Done">
+        <dc:Bounds x="2047" y="172" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2025" y="215" width="82" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_App_MaStR" bpmnElement="task_App_MaStR">
+        <dc:Bounds x="1870" y="150" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_DSO_Approve" bpmnElement="task_DSO_Approve">
+        <dc:Bounds x="1025" y="460" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_task_DSO_Reject" bpmnElement="task_DSO_Reject">
+        <dc:Bounds x="1025" y="570" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_end_DSO_Rejected" bpmnElement="end_DSO_Rejected">
+        <dc:Bounds x="1212" y="592" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1202" y="635" width="56" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_bnd_timer_sla" bpmnElement="bnd_timer_sla">
+        <dc:Bounds x="507" y="212" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="458" y="236" width="54" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_bnd_err_submit" bpmnElement="bnd_err_submit">
+        <dc:Bounds x="587" y="212" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="621" y="236" width="51" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="ed_f_start_to_prep" bpmnElement="f_start_to_prep">
+        <di:waypoint x="263" y="190" />
+        <di:waypoint x="315" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_prep_to_submit" bpmnElement="f_prep_to_submit">
+        <di:waypoint x="445" y="190" />
+        <di:waypoint x="495" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_submit_to_validate" bpmnElement="f_submit_to_validate">
+        <di:waypoint x="565" y="230" />
+        <di:waypoint x="565" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_err_to_handle" bpmnElement="f_err_to_handle">
+        <di:waypoint x="605" y="248" />
+        <di:waypoint x="605" y="290" />
+        <di:waypoint x="665" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_handled_to_end" bpmnElement="f_handled_to_end">
+        <di:waypoint x="795" y="290" />
+        <di:waypoint x="827" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_timer_to_escalate" bpmnElement="f_timer_to_escalate">
+        <di:waypoint x="525" y="248" />
+        <di:waypoint x="525" y="290" />
+        <di:waypoint x="465" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_escalate_to_end" bpmnElement="f_escalate_to_end">
+        <di:waypoint x="345" y="290" />
+        <di:waypoint x="293" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_validate_to_assess" bpmnElement="f_validate_to_assess">
+        <di:waypoint x="635" y="500" />
+        <di:waypoint x="685" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_assess_to_gw" bpmnElement="f_assess_to_gw">
+        <di:waypoint x="835" y="500" />
+        <di:waypoint x="890" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_gw_to_approve" bpmnElement="f_gw_to_approve">
+        <di:waypoint x="940" y="500" />
+        <di:waypoint x="1025" y="500" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="955" y="455" width="60" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_gw_to_reject" bpmnElement="f_gw_to_reject">
+        <di:waypoint x="915" y="525" />
+        <di:waypoint x="915" y="610" />
+        <di:waypoint x="1025" y="610" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="939" y="620" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_approve_to_install" bpmnElement="f_approve_to_install">
+        <di:waypoint x="1095" y="460" />
+        <di:waypoint x="1095" y="190" />
+        <di:waypoint x="1165" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_install_to_safety" bpmnElement="f_install_to_safety">
+        <di:waypoint x="1295" y="190" />
+        <di:waypoint x="1345" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_safety_to_completion" bpmnElement="f_safety_to_completion">
+        <di:waypoint x="1475" y="190" />
+        <di:waypoint x="1525" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_completion_to_split" bpmnElement="f_completion_to_split">
+        <di:waypoint x="1665" y="190" />
+        <di:waypoint x="1720" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_split_to_dso_verify" bpmnElement="f_split_to_dso_verify">
+        <di:waypoint x="1745" y="215" />
+        <di:waypoint x="1745" y="500" />
+        <di:waypoint x="1775" y="500" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1656" y="345" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_split_to_mastr" bpmnElement="f_split_to_mastr">
+        <di:waypoint x="1770" y="190" />
+        <di:waypoint x="1870" y="190" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1771" y="172" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_dso_verify_to_meter" bpmnElement="f_dso_verify_to_meter">
+        <di:waypoint x="1915" y="500" />
+        <di:waypoint x="1965" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_meter_to_activate" bpmnElement="f_meter_to_activate">
+        <di:waypoint x="2105" y="500" />
+        <di:waypoint x="2155" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_activate_to_end" bpmnElement="f_activate_to_end">
+        <di:waypoint x="2295" y="500" />
+        <di:waypoint x="2347" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_mastr_to_end" bpmnElement="f_mastr_to_end">
+        <di:waypoint x="2000" y="190" />
+        <di:waypoint x="2047" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="ed_f_reject_to_end" bpmnElement="f_reject_to_end">
+        <di:waypoint x="1095" y="570" />
+        <di:waypoint x="1095" y="550" />
+        <di:waypoint x="1230" y="550" />
+        <di:waypoint x="1230" y="592" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

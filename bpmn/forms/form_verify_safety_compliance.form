@@ -1,0 +1,32 @@
+{
+  "components": [
+    {
+      "text": "# VDE-AR-N 4105 Safety Compliance Verification\nConfirm grid protection relay tests and certified electrician signature.",
+      "type": "text",
+      "id": "Field_header_safe"
+    },
+    {
+      "label": "Anti-Islanding & Voltage Protection Passed",
+      "type": "checkbox",
+      "id": "Field_safe_passed",
+      "key": "antiIslandingVerified",
+      "defaultValue": true
+    },
+    {
+      "label": "Certified Electrician Registration Number",
+      "type": "textfield",
+      "id": "Field_elec_no",
+      "key": "electricianLicense",
+      "defaultValue": "VDE-BW-88492"
+    }
+  ],
+  "type": "default",
+  "id": "form_verify_safety_compliance",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.50.1"
+  },
+  "schemaVersion": 16
+}

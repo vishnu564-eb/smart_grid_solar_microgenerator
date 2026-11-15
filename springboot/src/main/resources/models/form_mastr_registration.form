@@ -1,0 +1,25 @@
+{
+  "components": [
+    {
+      "text": "# Federal MaStR Portal Registration\nEnter the registration confirmation number from the Marktstammdatenregister.",
+      "type": "text",
+      "id": "Field_header_mastr"
+    },
+    {
+      "label": "Marktstammdatenregister Unit ID (MaStR-Nummer)",
+      "type": "textfield",
+      "id": "Field_mastr_id",
+      "key": "mastrRegistrationNumber",
+      "defaultValue": "SEE98273645192"
+    }
+  ],
+  "type": "default",
+  "id": "form_mastr_registration",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.50.1"
+  },
+  "schemaVersion": 16
+}

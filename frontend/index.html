@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Netze BW | Smart Grid Solar Microgenerator Approval Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #f8fafc; }
+    .card-glow { box-shadow: 0 4px 20px -2px rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.2); }
+    .card-reject { box-shadow: 0 4px 20px -2px rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.2); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-xl">
+          <i class="fa-solid fa-solar-panel"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg text-white">Netze BW Smart Grid Portal</h1>
+          <p class="text-xs text-slate-400">Project 25: Solar Microgenerator Connection Approval (VDE-AR-N 4105)</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-3">
+        <a href="http://localhost:8080/operate" target="_blank" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md border border-slate-700 flex items-center space-x-1.5 transition">
+          <i class="fa-solid fa-chart-line text-emerald-400"></i>
+          <span>Camunda Operate</span>
+        </a>
+        <a href="http://localhost:8080/tasklist" target="_blank" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-md border border-slate-700 flex items-center space-x-1.5 transition">
+          <i class="fa-solid fa-list-check text-blue-400"></i>
+          <span>Tasklist</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 py-8 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+    
+    <!-- Left Column: Netzanfrage Form -->
+    <div class="lg:col-span-5 space-y-6">
+      <div class="bg-slate-900 rounded-xl p-6 border border-slate-800 shadow-xl">
+        <h2 class="text-base font-semibold text-white mb-1 flex items-center space-x-2">
+          <i class="fa-solid fa-file-invoice text-emerald-400"></i>
+          <span>Submit Digital Netzanfrage</span>
+        </h2>
+        <p class="text-xs text-slate-400 mb-6">Enter PV technical parameters for automated DMN grid feasibility assessment.</p>
+
+        <!-- Presets -->
+        <div class="mb-4 flex space-x-2">
+          <button onclick="setPreset('approval')" class="flex-1 py-1.5 text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded font-medium transition">
+            <i class="fa-solid fa-check mr-1"></i> Normal Approval
+          </button>
+          <button onclick="setPreset('overload')" class="flex-1 py-1.5 text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded font-medium transition">
+            <i class="fa-solid fa-triangle-exclamation mr-1"></i> Overload Reject
+          </button>
+        </div>
+
+        <form id="solarForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Certified Solar Installer Company</label>
+            <input type="text" id="installerName" value="Hans Mueller Solar GmbH" required class="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Installer Email Address</label>
+            <input type="email" id="applicantEmail" value="installer@solarpv.de" required class="w-full bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-xs font-medium text-slate-300">Peak Capacity (kWp)</label>
+              <span id="capDisplay" class="text-xs text-emerald-400 font-semibold">9.8 kWp</span>
+            </div>
+            <input type="range" id="systemCapacityKwp" min="1" max="50" step="0.1" value="9.8" oninput="updateRangeDisplays()" class="w-full accent-emerald-500">
+            <p class="text-[10px] text-slate-500 mt-0.5">Threshold: $\le 30$ kWp for simplified microgenerator feed-in.</p>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-xs font-medium text-slate-300">Transformer Utilization (%)</label>
+              <span id="loadDisplay" class="text-xs text-emerald-400 font-semibold">65 %</span>
+            </div>
+            <input type="range" id="transformerUtilizationPercent" min="20" max="110" step="1" value="65" oninput="updateRangeDisplays()" class="w-full accent-emerald-500">
+            <p class="text-[10px] text-slate-500 mt-0.5">Normative Limit: $\le 80\%$ transformer loading (VDE-AR-N 4105).</p>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-xs font-medium text-slate-300">Feeder Voltage Rise (%)</label>
+              <span id="voltDisplay" class="text-xs text-emerald-400 font-semibold">1.8 %</span>
+            </div>
+            <input type="range" id="voltageRisePercent" min="0.5" max="6.0" step="0.1" value="1.8" oninput="updateRangeDisplays()" class="w-full accent-emerald-500">
+            <p class="text-[10px] text-slate-500 mt-0.5">Statutory Limit: $\le +3.0\%$ maximum permissible voltage rise.</p>
+          </div>
+
+          <button type="submit" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 px-4 rounded-lg text-sm flex items-center justify-center space-x-2 transition shadow-lg shadow-emerald-900/30">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>Submit Digital Connection Request</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Quick Links Card -->
+      <div class="bg-slate-900/60 rounded-xl p-4 border border-slate-800 text-xs space-y-2">
+        <div class="text-slate-400 font-semibold">Backend Status:</div>
+        <div class="flex items-center space-x-2 text-emerald-400">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+          <span>Spring Boot 3 + Camunda 8 Zeebe Connected (Port 8085)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Process Execution & Notifications -->
+    <div class="lg:col-span-7 space-y-6">
+      
+      <!-- Result Card -->
+      <div id="resultCard" class="bg-slate-900 rounded-xl p-6 border border-slate-800 shadow-xl transition-all">
+        <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center space-x-2">
+          <i class="fa-solid fa-circle-nodes text-indigo-400"></i>
+          <span>Live Process Execution State</span>
+        </h3>
+
+        <div id="noInstanceMsg" class="py-12 text-center text-slate-500 text-sm">
+          <i class="fa-solid fa-satellite-dish text-3xl mb-2 text-slate-600"></i>
+          <p>No active process instance launched yet. Submit a form to begin.</p>
+        </div>
+
+        <div id="activeInstanceView" class="hidden space-y-4">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div>
+              <div class="text-xs text-slate-400">Process Instance Key</div>
+              <div id="instanceKeyDisplay" class="font-mono text-emerald-400 font-bold text-base">---</div>
+            </div>
+            <div id="statusBadge" class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              ACTIVE
+            </div>
+          </div>
+
+          <!-- Stepper -->
+          <div class="py-2 space-y-2">
+            <div class="text-xs text-slate-400 font-semibold">BPMN 2.0 Execution Stepper:</div>
+            <div class="grid grid-cols-4 gap-2 text-center text-xs">
+              <div id="step1" class="p-2 rounded bg-slate-800 border border-slate-700 text-slate-300">
+                <i class="fa-solid fa-file-pen block mb-1"></i> Netzanfrage
+              </div>
+              <div id="step2" class="p-2 rounded bg-slate-800 border border-slate-700 text-slate-300">
+                <i class="fa-solid fa-table-list block mb-1"></i> DMN Feasibility
+              </div>
+              <div id="step3" class="p-2 rounded bg-slate-800 border border-slate-700 text-slate-300">
+                <i class="fa-solid fa-tools block mb-1"></i> PV Installation
+              </div>
+              <div id="step4" class="p-2 rounded bg-slate-800 border border-slate-700 text-slate-300">
+                <i class="fa-solid fa-bolt block mb-1"></i> Energized
+              </div>
+            </div>
+          </div>
+
+          <!-- Operate Deep Link -->
+          <div class="pt-2">
+            <a id="operateLink" href="#" target="_blank" class="w-full block text-center py-2 bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 rounded-lg transition font-medium">
+              <i class="fa-solid fa-arrow-up-right-from-square mr-1 text-emerald-400"></i> Open Live in Camunda Operate
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dispatched Emails Inbox -->
+      <div class="bg-slate-900 rounded-xl p-6 border border-slate-800 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold text-white flex items-center space-x-2">
+            <i class="fa-solid fa-envelope text-amber-400"></i>
+            <span>Dispatched Email Notifications</span>
+          </h3>
+          <button onclick="fetchEmails()" class="text-xs text-slate-400 hover:text-white transition">
+            <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh Inbox
+          </button>
+        </div>
+
+        <div id="emailList" class="space-y-3 max-h-64 overflow-y-auto pr-1">
+          <div class="text-xs text-slate-500 text-center py-6">Loading notifications...</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="bg-slate-900 border-t border-slate-800 py-3 text-center text-xs text-slate-500">
+    Milestone 2 Full-Stack Integration | Spring Boot 3 &middot; Java 21 &middot; Camunda 8 Zeebe &middot; DMN 1.3
+  </footer>
+
+  <script>
+    function updateRangeDisplays() {
+      document.getElementById('capDisplay').innerText = document.getElementById('systemCapacityKwp').value + ' kWp';
+      document.getElementById('loadDisplay').innerText = document.getElementById('transformerUtilizationPercent').value + ' %';
+      document.getElementById('voltDisplay').innerText = document.getElementById('voltageRisePercent').value + ' %';
+    }
+
+    function setPreset(type) {
+      if (type === 'approval') {
+        document.getElementById('systemCapacityKwp').value = 9.8;
+        document.getElementById('transformerUtilizationPercent').value = 65;
+        document.getElementById('voltageRisePercent').value = 1.8;
+      } else {
+        document.getElementById('systemCapacityKwp').value = 9.8;
+        document.getElementById('transformerUtilizationPercent').value = 95;
+        document.getElementById('voltageRisePercent').value = 1.8;
+      }
+      updateRangeDisplays();
+    }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Launching in Zeebe...';
+
+      const payload = {
+        installerName: document.getElementById('installerName').value,
+        applicantEmail: document.getElementById('applicantEmail').value,
+        systemCapacityKwp: parseFloat(document.getElementById('systemCapacityKwp').value),
+        transformerUtilizationPercent: parseFloat(document.getElementById('transformerUtilizationPercent').value),
+        voltageRisePercent: parseFloat(document.getElementById('voltageRisePercent').value),
+        processDefinitionId: 'Process_Applicant_RealMail'
+      };
+
+      try {
+        const res = await fetch('/api/solar/connection-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          document.getElementById('noInstanceMsg').classList.add('hidden');
+          document.getElementById('activeInstanceView').classList.remove('hidden');
+          document.getElementById('instanceKeyDisplay').innerText = data.processInstanceKey;
+          document.getElementById('operateLink').href = 'http://localhost:8080/operate/processes/' + data.processInstanceKey;
+
+          // Highlight step 1 and step 2
+          document.getElementById('step1').className = 'p-2 rounded bg-emerald-500/20 border border-emerald-500 text-emerald-300 font-semibold';
+          document.getElementById('step2').className = 'p-2 rounded bg-blue-500/20 border border-blue-500 text-blue-300 font-semibold';
+
+          setTimeout(fetchEmails, 2000);
+        } else {
+          alert('Error starting instance: ' + data.error);
+        }
+      } catch (err) {
+        alert('Failed to connect to backend: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Submit Digital Connection Request';
+      }
+    }
+
+    async function fetchEmails() {
+      try {
+        const res = await fetch('/api/solar/emails');
+        const emails = await res.json();
+        const list = document.getElementById('emailList');
+        if (!emails || emails.length === 0) {
+          list.innerHTML = '<div class="text-xs text-slate-500 text-center py-4">No emails dispatched yet.</div>';
+          return;
+        }
+        list.innerHTML = emails.map(m => `
+          <div class="p-3 rounded-lg bg-slate-800/80 border ${m.type === 'REJECTION' ? 'border-red-500/40' : 'border-emerald-500/40'} text-xs space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-slate-200">${m.subject}</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.type === 'REJECTION' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}">${m.type}</span>
+            </div>
+            <div class="text-slate-400">To: <span class="text-slate-300">${m.recipient}</span></div>
+            <div class="text-slate-400 text-[11px] leading-relaxed pt-1">${m.body}</div>
+          </div>
+        `).join('');
+      } catch (e) {}
+    }
+
+    // Auto-refresh emails every 4 seconds
+    setInterval(fetchEmails, 4000);
+    fetchEmails();
+  </script>
+</body>
+</html>

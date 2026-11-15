@@ -1,0 +1,25 @@
+{
+  "components": [
+    {
+      "text": "# DSO Commissioning Protocol Review (Netze BW)\nReview submitted Inbetriebsetzungsprotokoll E.8 and installer certifications.",
+      "type": "text",
+      "id": "Field_header_dso_rev"
+    },
+    {
+      "label": "Commissioning Protocols & Certificates Approved",
+      "type": "checkbox",
+      "id": "Field_proto_appr",
+      "key": "protocolsApproved",
+      "defaultValue": true
+    }
+  ],
+  "type": "default",
+  "id": "form_verify_commissioning_protocols",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.50.1"
+  },
+  "schemaVersion": 16
+}
