@@ -1,4 +1,4 @@
-# Smart Grid Solar Microgenerator Connection Approval (VDE-AR-N 4105)
+# Smart Grid Solar Microgenerator Connection Approval (`smart_grid_solar_microgenerator`)
 
 [![Camunda 8](https://img.shields.io/badge/Camunda-8.8-orange.svg)](https://camunda.com/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.4-brightgreen.svg)](https://spring.io/projects/spring-boot)
@@ -21,7 +21,7 @@ This repository satisfies both **Milestone 1** (BPMN Design & Architecture) and 
 ## 2. Repository Structure
 
 ```
-solar/
+smart_grid_solar_microgenerator/
 ├── bpmn/
 │   ├── smart_grid_solar_microgenerator.bpmn          # Core BPMN 2.0 collaboration model
 │   ├── smart_grid_solar_microgenerator_real_mail.bpmn# Real Mail Send Task BPMN model
@@ -53,6 +53,7 @@ solar/
 │   ├── test-real-mail-flow.ps1                       # Tests live email dispatch flow
 │   └── test-real-mail-rejection-flow.ps1
 ├── start-app.bat                                     # 1-Click Spring Boot & Frontend launcher
+├── push-to-github.bat                                # 1-Click GitHub push script
 └── README.md
 ```
 
@@ -71,11 +72,6 @@ solar/
 
 ## 4. How to Run the Application
 
-### Prerequisites
-* Java 21 (`openjdk 21`)
-* Apache Maven 3.9+
-* Local Camunda 8 cluster (`c8run` listening on port `8080`, `26500`)
-
 ### 1-Click Startup
 Double-click `start-app.bat` or run:
 ```bash
@@ -90,18 +86,9 @@ Open your browser to:
 
 ---
 
-## 5. REST API Endpoints
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `POST` | `/api/solar/connection-request` | Launches a new Netzanfrage instance with PV parameters |
-| `GET` | `/api/solar/emails` | Retrieves all dispatched email notifications |
-| `POST` | `/api/solar/tasks/{taskId}/complete` | Completes user tasks directly from the web UI |
-
----
-
-## 6. Author & Evaluation
+## 5. Author & Evaluation
 * **Student**: Vishnu (`vishnu564-eb`)
+* **Repository**: `https://github.com/vishnu564-eb/smart_grid_solar_microgenerator`
 * **Course**: Workflow Automation & BPMN Integration
 * **Instructor**: Kishore Anthuvan Sahayaraj K
 * **Submissions**: Milestone 1 (BPMN/DMN) & Milestone 2 (Full-Stack Spring Boot + Frontend)
