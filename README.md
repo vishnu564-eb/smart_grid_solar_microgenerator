@@ -70,17 +70,3 @@ smart_grid_solar_microgenerator/
 
 ---
 
-## 4. How to Run the Application
-
-### 1-Click Startup
-Double-click `start-app.bat` or run:
-```bash
-cd springboot
-mvn spring-boot:run
-```
-
-Open your browser to:
-* **Web Dashboard**: [http://localhost:8085](http://localhost:8085)
-* **Camunda Operate**: [http://localhost:8080/operate](http://localhost:8080/operate) (`demo` / `demo`)
-* **Camunda Tasklist**: [http://localhost:8080/tasklist](http://localhost:8080/tasklist) (`demo` / `demo`)
-
