@@ -84,11 +84,3 @@ Open your browser to:
 * **Camunda Operate**: [http://localhost:8080/operate](http://localhost:8080/operate) (`demo` / `demo`)
 * **Camunda Tasklist**: [http://localhost:8080/tasklist](http://localhost:8080/tasklist) (`demo` / `demo`)
 
----
-
-## 5. Author & Evaluation
-* **Student**: Vishnu (`vishnu564-eb`)
-* **Repository**: `https://github.com/vishnu564-eb/smart_grid_solar_microgenerator`
-* **Course**: Workflow Automation & BPMN Integration
-* **Instructor**: Kishore Anthuvan Sahayaraj K
-* **Submissions**: Milestone 1 (BPMN/DMN) & Milestone 2 (Full-Stack Spring Boot + Frontend)
