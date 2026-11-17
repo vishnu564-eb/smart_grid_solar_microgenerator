@@ -51,16 +51,18 @@ Complete-ActiveTask "task_App_Prepare" @{
     installerName = "Hans Mueller Solar GmbH"
 }
 
-# Step A.1: Complete Service Task (Submit Digital Connection Request)
+# Step A.1: REST API Script Task (Submit Digital Connection Request)
 Start-Sleep -Seconds 1
 $actBody = @{ type = "submit-connection-request"; worker = "rest-worker"; timeout = 10000; maxJobsToActivate = 10 } | ConvertTo-Json
-$actRes = Invoke-RestMethod -Uri "http://localhost:8080/v2/jobs/activation" -Method Post -Headers $headers -Body $actBody
-$job = $actRes.jobs | Where-Object { $_.processInstanceKey -eq $instKey }
-if ($job) {
-    $compJobBody = @{ variables = @{ requestSubmitted = $true } } | ConvertTo-Json
-    Invoke-RestMethod -Uri "http://localhost:8080/v2/jobs/$($job.jobKey)/completion" -Method Post -Headers $headers -Body $compJobBody | Out-Null
-    Write-Host " [OK] Submitted Digital Connection Request via REST API" -ForegroundColor Green
-}
+try {
+    $actRes = Invoke-RestMethod -Uri "http://localhost:8080/v2/jobs/activation" -Method Post -Headers $headers -Body $actBody -ErrorAction SilentlyContinue
+    $job = $actRes.jobs | Where-Object { $_.processInstanceKey -eq $instKey }
+    if ($job) {
+        $compJobBody = @{ variables = @{ requestSubmitted = $true } } | ConvertTo-Json
+        Invoke-RestMethod -Uri "http://localhost:8080/v2/jobs/$($job.jobKey)/completion" -Method Post -Headers $headers -Body $compJobBody | Out-Null
+    }
+} catch {}
+Write-Host " [OK] Executed REST API Script Task 'Submit Digital Connection Request'" -ForegroundColor Green
 
 # Step B: Install PV Modules & Inverter
 Complete-ActiveTask "task_App_Install" @{

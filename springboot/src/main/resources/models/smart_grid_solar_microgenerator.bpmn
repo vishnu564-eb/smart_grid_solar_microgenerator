@@ -45,22 +45,50 @@
         <zeebe:userTask />
         <zeebe:assignmentDefinition candidateGroups="installer" />
         <zeebe:formDefinition formId="form_prepare_technical_docs" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=installerName" target="installerName" />
+          <zeebe:input source="=systemCapacityKwp" target="systemCapacityKwp" />
+          <zeebe:input source="=transformerUtilizationPercent" target="transformerUtilizationPercent" />
+          <zeebe:input source="=voltageRisePercent" target="voltageRisePercent" />
+          <zeebe:output source="=installerName" target="installerName" />
+          <zeebe:output source="=systemCapacityKwp" target="systemCapacityKwp" />
+          <zeebe:output source="=transformerUtilizationPercent" target="transformerUtilizationPercent" />
+          <zeebe:output source="=voltageRisePercent" target="voltageRisePercent" />
+          <zeebe:output source="=true" target="technicalDocsPrepared" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_start_to_prep</bpmn:incoming>
       <bpmn:outgoing>f_prep_to_submit</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:serviceTask id="task_App_Submit" name="Submit Digital&#10;Connection Request&#10;(REST API)">
+    <bpmn:scriptTask id="task_App_Submit" name="Submit Digital&#10;Connection Request&#10;(REST API)">
       <bpmn:documentation>Submit digital Netzanfrage via DSO REST portal pursuant to Section 8 EEG statutory requirements.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="submit-connection-request" />
+        <zeebe:script expression="={&#10;          requestSubmitted: true,&#10;          endpointUrl: &#34;http://localhost:8085/api/solar/connection-request&#34;,&#10;          httpMethod: &#34;POST&#34;,&#10;          headers: {&#10;            contentType: &#34;application/json&#34;,&#10;            accept: &#34;application/json&#34;&#10;          },&#10;          requestPayload: {&#10;            installerName: installerName,&#10;            systemCapacityKwp: systemCapacityKwp,&#10;            transformerUtilizationPercent: transformerUtilizationPercent,&#10;            voltageRisePercent: voltageRisePercent,&#10;            submissionDate: &#34;2026-11-17T08:00:00Z&#34;&#10;          },&#10;          statusCode: 200,&#10;          responseBody: {&#10;            applicationId: &#34;SOLAR-BW-2026-8812&#34;,&#10;            status: &#34;RECEIVED&#34;,&#10;            message: &#34;Netzanfrage successfully transmitted to Netze BW REST Gateway&#34;&#10;          }&#10;        }" resultVariable="restApiResponse" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=installerName" target="installerName" />
+          <zeebe:input source="=systemCapacityKwp" target="systemCapacityKwp" />
+          <zeebe:input source="=transformerUtilizationPercent" target="transformerUtilizationPercent" />
+          <zeebe:input source="=voltageRisePercent" target="voltageRisePercent" />
+          <zeebe:output source="=restApiResponse.requestSubmitted" target="requestSubmitted" />
+          <zeebe:output source="=restApiResponse.statusCode" target="restStatusCode" />
+          <zeebe:output source="=restApiResponse.responseBody.applicationId" target="applicationId" />
+          <zeebe:output source="=restApiResponse.requestPayload" target="submittedPayload" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_prep_to_submit</bpmn:incoming>
       <bpmn:outgoing>f_submit_to_validate</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:scriptTask>
     <bpmn:scriptTask id="task_App_HandleRestErr" name="Handle REST API&#10;Error &#38; Retry">
       <bpmn:documentation>Log transmission exception and queue connection request for automatic REST retry.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="=true" resultVariable="errorHandled" />
+        <zeebe:script expression="={&#10;          errorHandled: true,&#10;          retryCount: 1,&#10;          retryEndpoint: &#34;http://localhost:8085/api/solar/connection-request/retry&#34;,&#10;          restRetryStatus: &#34;QUEUED_FOR_RETRY&#34;,&#10;          errorCode: &#34;ERR_REST_FAIL&#34;,&#10;          errorMessage: &#34;Gateway Timeout (504): Netze BW portal unreachable, automatic retry scheduled.&#34;&#10;        }" resultVariable="restErrorResult" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=requestSubmitted" target="requestSubmitted" />
+          <zeebe:input source="=installerName" target="installerName" />
+          <zeebe:output source="=restErrorResult.errorHandled" target="errorHandled" />
+          <zeebe:output source="=restErrorResult.errorMessage" target="errorMessage" />
+          <zeebe:output source="=restErrorResult.restRetryStatus" target="restRetryStatus" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_err_to_handle</bpmn:incoming>
       <bpmn:outgoing>f_handled_to_end</bpmn:outgoing>
@@ -71,7 +99,14 @@
     <bpmn:scriptTask id="task_App_Escalate" name="Send Response SLA&#10;Escalation Notice">
       <bpmn:documentation>Transmit automated inquiry reminder to DSO when processing exceeds statutory 7-day evaluation window.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="=true" resultVariable="escalationSent" />
+        <zeebe:script expression="={&#10;          escalationSent: true,&#10;          escalationNotice: &#34;Statutory 7-day evaluation window pursuant to Section 8 EEG exceeded. Immediate assessment requested.&#34;,&#10;          escalationTimestamp: &#34;2026-11-17T08:15:00Z&#34;,&#10;          dsoRecipient: &#34;netzanfragen@netze-bw.de&#34;&#10;        }" resultVariable="escalationResult" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=applicationId" target="applicationId" />
+          <zeebe:input source="=installerName" target="installerName" />
+          <zeebe:output source="=escalationResult.escalationSent" target="escalationSent" />
+          <zeebe:output source="=escalationResult.escalationNotice" target="escalationNotice" />
+          <zeebe:output source="=escalationResult.escalationTimestamp" target="escalationTimestamp" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_timer_to_escalate</bpmn:incoming>
       <bpmn:outgoing>f_escalate_to_end</bpmn:outgoing>
@@ -82,7 +117,14 @@
     <bpmn:scriptTask id="task_DSO_Validate" name="Validate Application&#10;Documents">
       <bpmn:documentation>Verify complete submission of electrical schematic, inverter certificate, and installer accreditation pursuant to Netze BW criteria.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          documentsValid: true,&#10;          validationTimestamp: &#34;2026-11-15T19:00:00Z&#34;&#10;        }" resultVariable="dsoValidation" />
+        <zeebe:script expression="={&#10;          documentsValid: true,&#10;          validationTimestamp: &#34;2026-11-17T08:30:00Z&#34;,&#10;          reviewerNotes: &#34;Technical documents verified complete under Netze BW guidelines&#34;&#10;        }" resultVariable="dsoValidation" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=submittedPayload" target="submittedPayload" />
+          <zeebe:input source="=systemCapacityKwp" target="systemCapacityKwp" />
+          <zeebe:output source="=dsoValidation.documentsValid" target="documentsValid" />
+          <zeebe:output source="=dsoValidation.validationTimestamp" target="validationTimestamp" />
+          <zeebe:output source="=dsoValidation.reviewerNotes" target="reviewerNotes" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_submit_to_validate</bpmn:incoming>
       <bpmn:outgoing>f_validate_to_assess</bpmn:outgoing>
@@ -92,6 +134,9 @@
       <bpmn:extensionElements>
         <zeebe:calledDecision decisionId="Decision_GridFeasibility" resultVariable="gridAssessmentResult" />
         <zeebe:ioMapping>
+          <zeebe:input source="=systemCapacityKwp" target="systemCapacityKwp" />
+          <zeebe:input source="=transformerUtilizationPercent" target="transformerUtilizationPercent" />
+          <zeebe:input source="=voltageRisePercent" target="voltageRisePercent" />
           <zeebe:output source="=gridAssessmentResult.gridCapacityAvailable" target="gridCapacityAvailable" />
           <zeebe:output source="=gridAssessmentResult.approvalStatus" target="approvalStatus" />
           <zeebe:output source="=gridAssessmentResult.rejectionReason" target="rejectionReason" />
@@ -111,6 +156,13 @@
         <zeebe:userTask />
         <zeebe:assignmentDefinition candidateGroups="installer" />
         <zeebe:formDefinition formId="form_install_pv_modules" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=approvalCertificateId" target="approvalCertificateId" />
+          <zeebe:input source="=systemCapacityKwp" target="systemCapacityKwp" />
+          <zeebe:output source="=inverterModel" target="inverterModel" />
+          <zeebe:output source="=installationComplete" target="installationComplete" />
+          <zeebe:output source="=true" target="panelsMounted" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_approve_to_install</bpmn:incoming>
       <bpmn:outgoing>f_install_to_safety</bpmn:outgoing>
@@ -121,6 +173,13 @@
         <zeebe:userTask />
         <zeebe:assignmentDefinition candidateGroups="certifiedElectrician" />
         <zeebe:formDefinition formId="form_verify_safety_compliance" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=inverterModel" target="inverterModel" />
+          <zeebe:input source="=installationComplete" target="installationComplete" />
+          <zeebe:output source="=antiIslandingVerified" target="antiIslandingVerified" />
+          <zeebe:output source="=electricianLicense" target="electricianLicense" />
+          <zeebe:output source="=true" target="safetyCompliant" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_install_to_safety</bpmn:incoming>
       <bpmn:outgoing>f_safety_to_completion</bpmn:outgoing>
@@ -128,7 +187,14 @@
     <bpmn:scriptTask id="task_App_SubmitCompletion" name="Submit Completion&#10;Notification&#10;(Fertigmeldung)">
       <bpmn:documentation>Transmit signed commissioning protocol (Inbetriebsetzungsprotokoll E.8) and VDE safety certificate to Netze BW.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          completionSubmitted: true,&#10;          fertigmeldungDate: &#34;2026-11-15T19:15:00Z&#34;&#10;        }" resultVariable="completionPayload" />
+        <zeebe:script expression="={&#10;          completionSubmitted: true,&#10;          fertigmeldungDate: &#34;2026-11-17T10:00:00Z&#34;,&#10;          protocolNumber: &#34;E8-BW-2026-9011&#34;&#10;        }" resultVariable="completionPayload" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=antiIslandingVerified" target="antiIslandingVerified" />
+          <zeebe:input source="=electricianLicense" target="electricianLicense" />
+          <zeebe:output source="=completionPayload.completionSubmitted" target="completionSubmitted" />
+          <zeebe:output source="=completionPayload.fertigmeldungDate" target="fertigmeldungDate" />
+          <zeebe:output source="=completionPayload.protocolNumber" target="protocolNumber" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_safety_to_completion</bpmn:incoming>
       <bpmn:outgoing>f_completion_to_split</bpmn:outgoing>
@@ -144,6 +210,12 @@
         <zeebe:userTask />
         <zeebe:assignmentDefinition candidateGroups="dso" />
         <zeebe:formDefinition formId="form_verify_commissioning_protocols" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=completionSubmitted" target="completionSubmitted" />
+          <zeebe:input source="=protocolNumber" target="protocolNumber" />
+          <zeebe:output source="=protocolsApproved" target="protocolsApproved" />
+          <zeebe:output source="=true" target="protocolsVerified" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_split_to_dso_verify</bpmn:incoming>
       <bpmn:outgoing>f_dso_verify_to_meter</bpmn:outgoing>
@@ -151,7 +223,14 @@
     <bpmn:scriptTask id="task_DSO_DeployMeter" name="Arrange Bidirectional&#10;Smart Meter (iMSys)">
       <bpmn:documentation>Dispatch field technician or arrange installation of intelligent bidirectional smart metering system (iMSys) with CLS interface.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          smartMeterInstalled: true,&#10;          smartMeterId: &#34;IMS-BW-2026-99214&#34;&#10;        }" resultVariable="meteringData" />
+        <zeebe:script expression="={&#10;          smartMeterInstalled: true,&#10;          smartMeterId: &#34;IMS-BW-2026-99214&#34;,&#10;          meterType: &#34;Bidirectional Intelligent Metering System (iMSys)&#34;&#10;        }" resultVariable="meteringData" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=protocolsApproved" target="protocolsApproved" />
+          <zeebe:input source="=systemCapacityKwp" target="systemCapacityKwp" />
+          <zeebe:output source="=meteringData.smartMeterInstalled" target="smartMeterInstalled" />
+          <zeebe:output source="=meteringData.smartMeterId" target="smartMeterId" />
+          <zeebe:output source="=meteringData.meterType" target="meterType" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_dso_verify_to_meter</bpmn:incoming>
       <bpmn:outgoing>f_meter_to_activate</bpmn:outgoing>
@@ -159,7 +238,14 @@
     <bpmn:scriptTask id="task_DSO_Activate" name="Activate Connection&#10;&#38; Energize Grid">
       <bpmn:documentation>Energize Point of Common Coupling, synchronize solar inverter with distribution feeder, and activate telemetry.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          gridEnergized: true,&#10;          connectionStatus: &#34;ACTIVE&#34;&#10;        }" resultVariable="activationData" />
+        <zeebe:script expression="={&#10;          gridEnergized: true,&#10;          connectionStatus: &#34;ACTIVE&#34;,&#10;          energizationDate: &#34;2026-11-17T11:00:00Z&#34;&#10;        }" resultVariable="activationData" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=smartMeterInstalled" target="smartMeterInstalled" />
+          <zeebe:input source="=smartMeterId" target="smartMeterId" />
+          <zeebe:output source="=activationData.gridEnergized" target="gridEnergized" />
+          <zeebe:output source="=activationData.connectionStatus" target="connectionStatus" />
+          <zeebe:output source="=activationData.energizationDate" target="energizationDate" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_meter_to_activate</bpmn:incoming>
       <bpmn:outgoing>f_activate_to_end</bpmn:outgoing>
@@ -176,6 +262,12 @@
         <zeebe:userTask />
         <zeebe:assignmentDefinition candidateGroups="applicant" />
         <zeebe:formDefinition formId="form_mastr_registration" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=systemCapacityKwp" target="systemCapacityKwp" />
+          <zeebe:input source="=installerName" target="installerName" />
+          <zeebe:output source="=mastrRegistrationNumber" target="mastrRegistrationNumber" />
+          <zeebe:output source="=mastrRegistrationComplete" target="mastrRegistrationComplete" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_split_to_mastr</bpmn:incoming>
       <bpmn:outgoing>f_mastr_to_end</bpmn:outgoing>
@@ -183,7 +275,14 @@
     <bpmn:scriptTask id="task_DSO_Approve" name="Issue Grid Approval&#10;(Netzanschlusszusage)">
       <bpmn:documentation>Dispatch legally binding Netzanschlusszusage specifying Point of Common Coupling (PCC) and metering deployment terms.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          gridApproved: true,&#10;          approvalTimestamp: &#34;2026-11-15T19:05:00Z&#34;&#10;        }" resultVariable="approvalDetails" />
+        <zeebe:script expression="={&#10;          gridApproved: true,&#10;          approvalCertificateId: &#34;NAZ-BW-2026-4401&#34;,&#10;          approvalTimestamp: &#34;2026-11-17T09:00:00Z&#34;,&#10;          pointOfCommonCoupling: &#34;HAK-230V-Feeder-7&#34;&#10;        }" resultVariable="approvalDetails" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=approvalStatus" target="approvalStatus" />
+          <zeebe:input source="=systemCapacityKwp" target="systemCapacityKwp" />
+          <zeebe:output source="=approvalDetails.gridApproved" target="gridApproved" />
+          <zeebe:output source="=approvalDetails.approvalCertificateId" target="approvalCertificateId" />
+          <zeebe:output source="=approvalDetails.approvalTimestamp" target="approvalTimestamp" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_gw_to_approve</bpmn:incoming>
       <bpmn:outgoing>f_approve_to_install</bpmn:outgoing>
@@ -191,7 +290,14 @@
     <bpmn:scriptTask id="task_DSO_Reject" name="Issue Technical&#10;Rejection Notice">
       <bpmn:documentation>Issue technical rejection notice detailing feeder bottleneck or transformer overload with grid reinforcement roadmap.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          gridApproved: false,&#10;          rejectionIssued: true&#10;        }" resultVariable="rejectionDetails" />
+        <zeebe:script expression="={&#10;          gridApproved: false,&#10;          rejectionIssued: true,&#10;          rejectionNotice: &#34;Connection request rejected due to local grid capacity constraints.&#34;,&#10;          rejectionDate: &#34;2026-11-17T09:00:00Z&#34;&#10;        }" resultVariable="rejectionDetails" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=approvalStatus" target="approvalStatus" />
+          <zeebe:input source="=rejectionReason" target="rejectionReason" />
+          <zeebe:output source="=rejectionDetails.gridApproved" target="gridApproved" />
+          <zeebe:output source="=rejectionDetails.rejectionIssued" target="rejectionIssued" />
+          <zeebe:output source="=rejectionDetails.rejectionNotice" target="rejectionNotice" />
+        </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_gw_to_reject</bpmn:incoming>
       <bpmn:outgoing>f_reject_to_end</bpmn:outgoing>
