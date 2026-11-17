@@ -533,7 +533,7 @@
         <di:waypoint x="1665" y="190" />
         <di:waypoint x="1720" y="190" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="ed_f_split_to_dso_verify" name="DSO Commissioning" sourceRef="gw_Parallel_Commission" targetRef="task_DSO_VerifyProtocols">
+      <bpmndi:BPMNEdge id="ed_f_split_to_dso_verify" bpmnElement="f_split_to_dso_verify">
         <di:waypoint x="1745" y="215" />
         <di:waypoint x="1745" y="500" />
         <di:waypoint x="1775" y="500" />
@@ -541,35 +541,35 @@
           <dc:Bounds x="1656" y="345" width="76" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="ed_f_split_to_mastr" name="MaStR Portal Registration" sourceRef="gw_Parallel_Commission" targetRef="task_App_MaStR">
+      <bpmndi:BPMNEdge id="ed_f_split_to_mastr" bpmnElement="f_split_to_mastr">
         <di:waypoint x="1770" y="190" />
         <di:waypoint x="1870" y="190" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1771" y="172" width="66" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="ed_f_dso_verify_to_meter" sourceRef="task_DSO_VerifyProtocols" targetRef="task_DSO_DeployMeter">
+      <bpmndi:BPMNEdge id="ed_f_dso_verify_to_meter" bpmnElement="f_dso_verify_to_meter">
         <di:waypoint x="1915" y="500" />
         <di:waypoint x="1965" y="500" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="ed_f_meter_to_activate" sourceRef="task_DSO_DeployMeter" targetRef="task_DSO_Activate">
+      <bpmndi:BPMNEdge id="ed_f_meter_to_activate" bpmnElement="f_meter_to_activate">
         <di:waypoint x="2105" y="500" />
         <di:waypoint x="2155" y="500" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="ed_f_activate_to_join" sourceRef="task_DSO_Activate" targetRef="gw_Parallel_Join">
+      <bpmndi:BPMNEdge id="ed_f_activate_to_join" bpmnElement="f_activate_to_join">
         <di:waypoint x="2295" y="500" />
         <di:waypoint x="2340" y="500" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="ed_f_mastr_to_join" sourceRef="task_App_MaStR" targetRef="gw_Parallel_Join">
+      <bpmndi:BPMNEdge id="ed_f_mastr_to_join" bpmnElement="f_mastr_to_join">
         <di:waypoint x="2010" y="190" />
         <di:waypoint x="2365" y="190" />
         <di:waypoint x="2365" y="475" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="ed_f_join_to_complete" sourceRef="gw_Parallel_Join" targetRef="end_Process_Complete">
+      <bpmndi:BPMNEdge id="ed_f_join_to_complete" bpmnElement="f_join_to_complete">
         <di:waypoint x="2390" y="500" />
         <di:waypoint x="2452" y="500" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="ed_f_reject_to_end" sourceRef="task_DSO_Reject" targetRef="end_DSO_Rejected">
+      <bpmndi:BPMNEdge id="ed_f_reject_to_end" bpmnElement="f_reject_to_end">
         <di:waypoint x="1095" y="570" />
         <di:waypoint x="1095" y="550" />
         <di:waypoint x="1230" y="550" />
