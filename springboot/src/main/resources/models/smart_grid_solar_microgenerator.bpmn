@@ -114,21 +114,25 @@
     <bpmn:endEvent id="end_App_Escalated" name="SLA Escalation&#10;Dispatched">
       <bpmn:incoming>f_escalate_to_end</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:scriptTask id="task_DSO_Validate" name="Validate Application&#10;Documents">
+    <bpmn:userTask id="task_DSO_Validate" name="Validate Application&#10;Documents">
       <bpmn:documentation>Verify complete submission of electrical schematic, inverter certificate, and installer accreditation pursuant to Netze BW criteria.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          documentsValid: true,&#10;          validationTimestamp: &#34;2026-11-17T08:30:00Z&#34;,&#10;          reviewerNotes: &#34;Technical documents verified complete under Netze BW guidelines&#34;&#10;        }" resultVariable="dsoValidation" />
+        <zeebe:userTask />
+        <zeebe:assignmentDefinition candidateGroups="dso" />
+        <zeebe:formDefinition formId="form_validate_application_docs" />
         <zeebe:ioMapping>
-          <zeebe:input source="=submittedPayload" target="submittedPayload" />
+          <zeebe:input source="=installerName" target="installerName" />
           <zeebe:input source="=systemCapacityKwp" target="systemCapacityKwp" />
-          <zeebe:output source="=dsoValidation.documentsValid" target="documentsValid" />
-          <zeebe:output source="=dsoValidation.validationTimestamp" target="validationTimestamp" />
-          <zeebe:output source="=dsoValidation.reviewerNotes" target="reviewerNotes" />
+          <zeebe:input source="=transformerUtilizationPercent" target="transformerUtilizationPercent" />
+          <zeebe:input source="=voltageRisePercent" target="voltageRisePercent" />
+          <zeebe:output source="=documentsValid" target="documentsValid" />
+          <zeebe:output source="=reviewerNotes" target="reviewerNotes" />
+          <zeebe:output source="=true" target="validationComplete" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_submit_to_validate</bpmn:incoming>
       <bpmn:outgoing>f_validate_to_assess</bpmn:outgoing>
-    </bpmn:scriptTask>
+    </bpmn:userTask>
     <bpmn:businessRuleTask id="task_DSO_AssessGrid" name="Perform Grid Capacity&#10;&#38; Voltage Assessment&#10;(DMN)">
       <bpmn:documentation>Execute DMN decision rules: assess low-voltage cable loading, transformer utilization limit (&lt;= 80%), and statutory voltage rise (&lt;= 3.0%).</bpmn:documentation>
       <bpmn:extensionElements>

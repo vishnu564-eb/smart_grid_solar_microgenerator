@@ -1,0 +1,32 @@
+{
+  "components": [
+    {
+      "text": "# DSO Technical Review & Document Validation\nReview applicant single-line diagrams, inverter certificates, and site schematics for Netze BW compliance.",
+      "type": "text",
+      "id": "Field_header_dso_val"
+    },
+    {
+      "label": "Technical Documentation Valid & Complete",
+      "type": "checkbox",
+      "id": "Field_docs_valid",
+      "key": "documentsValid",
+      "defaultValue": true
+    },
+    {
+      "label": "DSO Reviewer Official Remarks",
+      "type": "textfield",
+      "id": "Field_dso_notes",
+      "key": "reviewerNotes",
+      "defaultValue": "Technical documents verified complete under Netze BW guidelines."
+    }
+  ],
+  "type": "default",
+  "id": "form_validate_application_docs",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.8.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.50.1"
+  },
+  "schemaVersion": 16
+}
