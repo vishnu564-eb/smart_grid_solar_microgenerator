@@ -18,7 +18,7 @@
         <bpmn:flowNodeRef>task_DSO_Reject</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>end_DSO_Rejected</bpmn:flowNodeRef>
       </bpmn:lane>
-      <bpmn:lane id="Lane_Applicant" name="Applicant / Certified Solar Installer (Anlagenbetreiber)">
+      <bpmn:lane id="Lane_Applicant" name="Applicant / Certified Solar Installer (System Operator)">
         <bpmn:flowNodeRef>start_App</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>task_App_Prepare</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>task_App_Submit</bpmn:flowNodeRef>
@@ -61,9 +61,9 @@
       <bpmn:outgoing>f_prep_to_submit</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:scriptTask id="task_App_Submit" name="Submit Digital&#10;Connection Request&#10;(REST API)">
-      <bpmn:documentation>Submit digital Netzanfrage via DSO REST portal pursuant to Section 8 EEG statutory requirements.</bpmn:documentation>
+      <bpmn:documentation>Submit digital Grid Connection Request via DSO REST portal pursuant to Section 8 EEG statutory requirements.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          requestSubmitted: true,&#10;          endpointUrl: &#34;http://localhost:8085/api/solar/connection-request&#34;,&#10;          httpMethod: &#34;POST&#34;,&#10;          headers: {&#10;            contentType: &#34;application/json&#34;,&#10;            accept: &#34;application/json&#34;&#10;          },&#10;          requestPayload: {&#10;            installerName: installerName,&#10;            systemCapacityKwp: systemCapacityKwp,&#10;            transformerUtilizationPercent: transformerUtilizationPercent,&#10;            voltageRisePercent: voltageRisePercent,&#10;            submissionDate: &#34;2026-11-17T08:00:00Z&#34;&#10;          },&#10;          statusCode: 200,&#10;          responseBody: {&#10;            applicationId: &#34;SOLAR-BW-2026-8812&#34;,&#10;            status: &#34;RECEIVED&#34;,&#10;            message: &#34;Netzanfrage successfully transmitted to Netze BW REST Gateway&#34;&#10;          }&#10;        }" resultVariable="restApiResponse" />
+        <zeebe:script expression="={&#10;          requestSubmitted: true,&#10;          endpointUrl: &#34;http://localhost:8085/api/solar/connection-request&#34;,&#10;          httpMethod: &#34;POST&#34;,&#10;          headers: {&#10;            contentType: &#34;application/json&#34;,&#10;            accept: &#34;application/json&#34;&#10;          },&#10;          requestPayload: {&#10;            installerName: installerName,&#10;            systemCapacityKwp: systemCapacityKwp,&#10;            transformerUtilizationPercent: transformerUtilizationPercent,&#10;            voltageRisePercent: voltageRisePercent,&#10;            submissionDate: &#34;2026-11-17T08:00:00Z&#34;&#10;          },&#10;          statusCode: 200,&#10;          responseBody: {&#10;            applicationId: &#34;SOLAR-BW-2026-8812&#34;,&#10;            status: &#34;RECEIVED&#34;,&#10;            message: &#34;Grid Connection Request successfully transmitted to Netze BW REST Gateway&#34;&#10;          }&#10;        }" resultVariable="restApiResponse" />
         <zeebe:ioMapping>
           <zeebe:input source="=installerName" target="installerName" />
           <zeebe:input source="=systemCapacityKwp" target="systemCapacityKwp" />
@@ -99,7 +99,7 @@
     <bpmn:scriptTask id="task_App_Escalate" name="Send Response SLA&#10;Escalation Notice">
       <bpmn:documentation>Transmit automated inquiry reminder to DSO when processing exceeds statutory 7-day evaluation window.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          escalationSent: true,&#10;          escalationNotice: &#34;Statutory 7-day evaluation window pursuant to Section 8 EEG exceeded. Immediate assessment requested.&#34;,&#10;          escalationTimestamp: &#34;2026-11-17T08:15:00Z&#34;,&#10;          dsoRecipient: &#34;netzanfragen@netze-bw.de&#34;&#10;        }" resultVariable="escalationResult" />
+        <zeebe:script expression="={&#10;          escalationSent: true,&#10;          escalationNotice: &#34;Statutory 7-day evaluation window pursuant to Section 8 EEG exceeded. Immediate assessment requested.&#34;,&#10;          escalationTimestamp: &#34;2026-11-17T08:15:00Z&#34;,&#10;          dsoRecipient: &#34;grid-requests@netze-bw.de&#34;&#10;        }" resultVariable="escalationResult" />
         <zeebe:ioMapping>
           <zeebe:input source="=applicationId" target="applicationId" />
           <zeebe:input source="=installerName" target="installerName" />
@@ -184,15 +184,15 @@
       <bpmn:incoming>f_install_to_safety</bpmn:incoming>
       <bpmn:outgoing>f_safety_to_completion</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:scriptTask id="task_App_SubmitCompletion" name="Submit Completion&#10;Notification&#10;(Fertigmeldung)">
-      <bpmn:documentation>Transmit signed commissioning protocol (Inbetriebsetzungsprotokoll E.8) and VDE safety certificate to Netze BW.</bpmn:documentation>
+    <bpmn:scriptTask id="task_App_SubmitCompletion" name="Submit System&#10;Completion&#10;Notification">
+      <bpmn:documentation>Transmit signed commissioning protocol (E.8 standard) and VDE safety compliance certificate to DSO.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          completionSubmitted: true,&#10;          fertigmeldungDate: &#34;2026-11-17T10:00:00Z&#34;,&#10;          protocolNumber: &#34;E8-BW-2026-9011&#34;&#10;        }" resultVariable="completionPayload" />
+        <zeebe:script expression="={&#10;          completionSubmitted: true,&#10;          completionDate: &#34;2026-11-17T10:00:00Z&#34;,&#10;          protocolNumber: &#34;E8-BW-2026-9011&#34;&#10;        }" resultVariable="completionPayload" />
         <zeebe:ioMapping>
           <zeebe:input source="=antiIslandingVerified" target="antiIslandingVerified" />
           <zeebe:input source="=electricianLicense" target="electricianLicense" />
           <zeebe:output source="=completionPayload.completionSubmitted" target="completionSubmitted" />
-          <zeebe:output source="=completionPayload.fertigmeldungDate" target="fertigmeldungDate" />
+          <zeebe:output source="=completionPayload.completionDate" target="completionDate" />
           <zeebe:output source="=completionPayload.protocolNumber" target="protocolNumber" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
@@ -272,8 +272,8 @@
       <bpmn:incoming>f_split_to_mastr</bpmn:incoming>
       <bpmn:outgoing>f_mastr_to_end</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:scriptTask id="task_DSO_Approve" name="Issue Grid Approval&#10;(Netzanschlusszusage)">
-      <bpmn:documentation>Dispatch legally binding Netzanschlusszusage specifying Point of Common Coupling (PCC) and metering deployment terms.</bpmn:documentation>
+    <bpmn:scriptTask id="task_DSO_Approve" name="Issue Grid Approval&#10;Certificate">
+      <bpmn:documentation>Dispatch legally binding Grid Connection Approval Certificate specifying Point of Common Coupling (PCC) and metering deployment terms.</bpmn:documentation>
       <bpmn:extensionElements>
         <zeebe:script expression="={&#10;          gridApproved: true,&#10;          approvalCertificateId: &#34;NAZ-BW-2026-4401&#34;,&#10;          approvalTimestamp: &#34;2026-11-17T09:00:00Z&#34;,&#10;          pointOfCommonCoupling: &#34;HAK-230V-Feeder-7&#34;&#10;        }" resultVariable="approvalDetails" />
         <zeebe:ioMapping>
