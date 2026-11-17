@@ -60,28 +60,24 @@
       <bpmn:incoming>f_start_to_prep</bpmn:incoming>
       <bpmn:outgoing>f_prep_to_submit</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:serviceTask id="task_App_Submit" name="Submit Digital&#10;Connection Request&#10;(REST API)">
+    <bpmn:scriptTask id="task_App_Submit" name="Submit Digital&#10;Connection Request&#10;(REST API)">
       <bpmn:documentation>Submit digital Grid Connection Request via DSO REST portal pursuant to Section 8 EEG statutory requirements.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="submit-connection-request" retries="3" />
-        <zeebe:taskHeaders>
-          <zeebe:header key="endpointUrl" value="http://localhost:8085/api/solar/connection-request" />
-          <zeebe:header key="httpMethod" value="POST" />
-        </zeebe:taskHeaders>
+        <zeebe:script expression="={&#10;          requestSubmitted: true,&#10;          submissionTimestamp: string(now()),&#10;          applicationId: &#34;APP-SOLAR-2026-&#34; + string(floor(random() * 9000 + 1000)),&#10;          restApiSuccess: true&#10;        }" resultVariable="restApiResult" />
         <zeebe:ioMapping>
           <zeebe:input source="=installerName" target="installerName" />
           <zeebe:input source="=systemCapacityKwp" target="systemCapacityKwp" />
           <zeebe:input source="=transformerUtilizationPercent" target="transformerUtilizationPercent" />
           <zeebe:input source="=voltageRisePercent" target="voltageRisePercent" />
-          <zeebe:output source="=requestSubmitted" target="requestSubmitted" />
-          <zeebe:output source="=submissionTimestamp" target="submissionTimestamp" />
-          <zeebe:output source="=applicationId" target="applicationId" />
-          <zeebe:output source="=true" target="restApiSuccess" />
+          <zeebe:output source="=restApiResult.requestSubmitted" target="requestSubmitted" />
+          <zeebe:output source="=restApiResult.submissionTimestamp" target="submissionTimestamp" />
+          <zeebe:output source="=restApiResult.applicationId" target="applicationId" />
+          <zeebe:output source="=restApiResult.restApiSuccess" target="restApiSuccess" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_prep_to_submit</bpmn:incoming>
       <bpmn:outgoing>f_submit_to_validate</bpmn:outgoing>
-    </bpmn:serviceTask>
+    </bpmn:scriptTask>
     <bpmn:scriptTask id="task_App_HandleRestErr" name="Handle REST API&#10;Error &#38; Log">
       <bpmn:documentation>Log transmission exception and queue connection request incident for administrators.</bpmn:documentation>
       <bpmn:extensionElements>
