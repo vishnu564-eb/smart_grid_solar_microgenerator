@@ -24,6 +24,7 @@
         <bpmn:flowNodeRef>task_App_Prepare</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>task_App_Submit</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>task_App_HandleRestErr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>end_App_RestFail</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>task_App_Escalate</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>end_App_Escalated</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>task_App_Install</bpmn:flowNodeRef>
@@ -79,39 +80,41 @@
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_prep_to_submit</bpmn:incoming>
-      <bpmn:incoming>f_retry_to_submit</bpmn:incoming>
       <bpmn:outgoing>f_submit_to_validate</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:scriptTask id="task_App_HandleRestErr" name="Handle REST API&#10;Error &#38; Retry">
-      <bpmn:documentation>Log transmission exception and queue connection request for automatic REST retry.</bpmn:documentation>
+    <bpmn:scriptTask id="task_App_HandleRestErr" name="Handle REST API&#10;Error &#38; Log">
+      <bpmn:documentation>Log transmission exception and queue connection request incident for administrators.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          errorHandled: true,&#10;          retryCount: 1,&#10;          retryEndpoint: &#34;http://localhost:8085/api/solar/connection-request/retry&#34;,&#10;          restRetryStatus: &#34;QUEUED_FOR_RETRY&#34;,&#10;          errorCode: &#34;ERR_REST_FAIL&#34;,&#10;          errorMessage: &#34;Gateway Timeout (504): Netze BW portal unreachable, automatic retry scheduled.&#34;&#10;        }" resultVariable="restErrorResult" />
+        <zeebe:script expression="={&#10;          errorHandled: true,&#10;          errorCode: &#34;ERR_REST_FAIL&#34;,&#10;          errorMessage: &#34;Gateway Timeout (504): Netze BW portal unreachable, incident logged.&#34;&#10;        }" resultVariable="restErrorResult" />
         <zeebe:ioMapping>
           <zeebe:input source="=requestSubmitted" target="requestSubmitted" />
           <zeebe:input source="=installerName" target="installerName" />
           <zeebe:output source="=restErrorResult.errorHandled" target="errorHandled" />
           <zeebe:output source="=restErrorResult.errorMessage" target="errorMessage" />
-          <zeebe:output source="=restErrorResult.restRetryStatus" target="restRetryStatus" />
+          <zeebe:output source="=true" target="errorLogged" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_err_to_handle</bpmn:incoming>
-      <bpmn:outgoing>f_retry_to_submit</bpmn:outgoing>
+      <bpmn:outgoing>f_handled_to_end</bpmn:outgoing>
     </bpmn:scriptTask>
-    <bpmn:scriptTask id="task_App_Escalate" name="Send Response SLA&#10;Escalation Notice">
-      <bpmn:documentation>Transmit automated inquiry reminder to DSO when processing exceeds statutory 7-day evaluation window.</bpmn:documentation>
+    <bpmn:endEvent id="end_App_RestFail" name="Submission Error&#10;Logged">
+      <bpmn:incoming>f_handled_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sendTask id="task_App_Escalate" name="Send Response SLA&#10;Escalation Notice (Email)">
+      <bpmn:documentation>Transmit automated escalation notice email to DSO when processing exceeds statutory 7-day evaluation window.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          escalationSent: true,&#10;          escalationNotice: &#34;Statutory 7-day evaluation window pursuant to Section 8 EEG exceeded. Immediate assessment requested.&#34;,&#10;          escalationTimestamp: &#34;2026-11-17T08:15:00Z&#34;,&#10;          dsoRecipient: &#34;grid-requests@netze-bw.de&#34;&#10;        }" resultVariable="escalationResult" />
+        <zeebe:taskDefinition type="send-email" retries="3" />
         <zeebe:ioMapping>
           <zeebe:input source="=applicationId" target="applicationId" />
           <zeebe:input source="=installerName" target="installerName" />
-          <zeebe:output source="=escalationResult.escalationSent" target="escalationSent" />
-          <zeebe:output source="=escalationResult.escalationNotice" target="escalationNotice" />
-          <zeebe:output source="=escalationResult.escalationTimestamp" target="escalationTimestamp" />
+          <zeebe:output source="=true" target="escalationSent" />
+          <zeebe:output source="=&#34;ESCALATION&#34;" target="mailType" />
+          <zeebe:output source="=true" target="mailSent" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_timer_to_escalate</bpmn:incoming>
       <bpmn:outgoing>f_escalate_to_end</bpmn:outgoing>
-    </bpmn:scriptTask>
+    </bpmn:sendTask>
     <bpmn:endEvent id="end_App_Escalated" name="SLA Escalation&#10;Dispatched">
       <bpmn:incoming>f_escalate_to_end</bpmn:incoming>
     </bpmn:endEvent>
@@ -275,36 +278,36 @@
     <bpmn:endEvent id="end_Process_Complete" name="Microgenerator Active&#10;&#38; Feed-In Operational">
       <bpmn:incoming>f_join_to_complete</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:scriptTask id="task_DSO_Approve" name="Issue Grid Approval&#10;Certificate">
-      <bpmn:documentation>Dispatch legally binding Grid Connection Approval Certificate specifying Point of Common Coupling (PCC) and metering deployment terms.</bpmn:documentation>
+    <bpmn:sendTask id="task_DSO_Approve" name="Issue Grid Approval&#10;Certificate (Email)">
+      <bpmn:documentation>Send official Grid Connection Approval Certificate (Netzanschlusszusage) email with Point of Common Coupling (PCC) terms to applicant.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          gridApproved: true,&#10;          approvalCertificateId: &#34;NAZ-BW-2026-4401&#34;,&#10;          approvalTimestamp: &#34;2026-11-17T09:00:00Z&#34;,&#10;          pointOfCommonCoupling: &#34;HAK-230V-Feeder-7&#34;&#10;        }" resultVariable="approvalDetails" />
+        <zeebe:taskDefinition type="send-email" retries="3" />
         <zeebe:ioMapping>
           <zeebe:input source="=approvalStatus" target="approvalStatus" />
           <zeebe:input source="=systemCapacityKwp" target="systemCapacityKwp" />
-          <zeebe:output source="=approvalDetails.gridApproved" target="gridApproved" />
-          <zeebe:output source="=approvalDetails.approvalCertificateId" target="approvalCertificateId" />
-          <zeebe:output source="=approvalDetails.approvalTimestamp" target="approvalTimestamp" />
+          <zeebe:output source="=true" target="gridApproved" />
+          <zeebe:output source="=&#34;NAZ-BW-2026-4401&#34;" target="approvalCertificateId" />
+          <zeebe:output source="=true" target="mailSent" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_gw_to_approve</bpmn:incoming>
       <bpmn:outgoing>f_approve_to_install</bpmn:outgoing>
-    </bpmn:scriptTask>
-    <bpmn:scriptTask id="task_DSO_Reject" name="Issue Technical&#10;Rejection Notice">
-      <bpmn:documentation>Issue technical rejection notice detailing feeder bottleneck or transformer overload with grid reinforcement roadmap.</bpmn:documentation>
+    </bpmn:sendTask>
+    <bpmn:sendTask id="task_DSO_Reject" name="Issue Technical Rejection&#10;Notice (Email)">
+      <bpmn:documentation>Send official technical rejection notice email explaining grid feeder capacity constraints to applicant.</bpmn:documentation>
       <bpmn:extensionElements>
-        <zeebe:script expression="={&#10;          gridApproved: false,&#10;          rejectionIssued: true,&#10;          rejectionNotice: &#34;Connection request rejected due to local grid capacity constraints.&#34;,&#10;          rejectionDate: &#34;2026-11-17T09:00:00Z&#34;&#10;        }" resultVariable="rejectionDetails" />
+        <zeebe:taskDefinition type="send-email" retries="3" />
         <zeebe:ioMapping>
           <zeebe:input source="=approvalStatus" target="approvalStatus" />
           <zeebe:input source="=rejectionReason" target="rejectionReason" />
-          <zeebe:output source="=rejectionDetails.gridApproved" target="gridApproved" />
-          <zeebe:output source="=rejectionDetails.rejectionIssued" target="rejectionIssued" />
-          <zeebe:output source="=rejectionDetails.rejectionNotice" target="rejectionNotice" />
+          <zeebe:output source="=false" target="gridApproved" />
+          <zeebe:output source="=true" target="rejectionIssued" />
+          <zeebe:output source="=true" target="mailSent" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:incoming>f_gw_to_reject</bpmn:incoming>
       <bpmn:outgoing>f_reject_to_end</bpmn:outgoing>
-    </bpmn:scriptTask>
+    </bpmn:sendTask>
     <bpmn:endEvent id="end_DSO_Rejected" name="Connection Request&#10;Rejected">
       <bpmn:incoming>f_reject_to_end</bpmn:incoming>
     </bpmn:endEvent>
@@ -322,7 +325,7 @@
     <bpmn:sequenceFlow id="f_prep_to_submit" sourceRef="task_App_Prepare" targetRef="task_App_Submit" />
     <bpmn:sequenceFlow id="f_submit_to_validate" sourceRef="task_App_Submit" targetRef="task_DSO_Validate" />
     <bpmn:sequenceFlow id="f_err_to_handle" sourceRef="bnd_err_submit" targetRef="task_App_HandleRestErr" />
-    <bpmn:sequenceFlow id="f_retry_to_submit" name="Retry Request&#10;(Automatic Backoff)" sourceRef="task_App_HandleRestErr" targetRef="task_App_Submit" />
+    <bpmn:sequenceFlow id="f_handled_to_end" sourceRef="task_App_HandleRestErr" targetRef="end_App_RestFail" />
     <bpmn:sequenceFlow id="f_timer_to_escalate" sourceRef="bnd_timer_sla" targetRef="task_App_Escalate" />
     <bpmn:sequenceFlow id="f_escalate_to_end" sourceRef="task_App_Escalate" targetRef="end_App_Escalated" />
     <bpmn:sequenceFlow id="f_validate_to_assess" sourceRef="task_DSO_Validate" targetRef="task_DSO_AssessGrid" />
@@ -371,7 +374,13 @@
         <dc:Bounds x="495" y="150" width="140" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="sh_task_App_HandleRestErr" bpmnElement="task_App_HandleRestErr">
-        <dc:Bounds x="665" y="260" width="140" height="60" />
+        <dc:Bounds x="665" y="260" width="130" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sh_end_App_RestFail" bpmnElement="end_App_RestFail">
+        <dc:Bounds x="837" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="813" y="315" width="85" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="sh_task_App_Escalate" bpmnElement="task_App_Escalate">
         <dc:Bounds x="345" y="260" width="120" height="60" />
@@ -474,15 +483,9 @@
         <di:waypoint x="605" y="290" />
         <di:waypoint x="665" y="290" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="ed_f_retry_to_submit" bpmnElement="f_retry_to_submit">
-        <di:waypoint x="735" y="320" />
-        <di:waypoint x="735" y="340" />
-        <di:waypoint x="465" y="340" />
-        <di:waypoint x="465" y="190" />
-        <di:waypoint x="495" y="190" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="555" y="322" width="75" height="27" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNEdge id="ed_f_handled_to_end" bpmnElement="f_handled_to_end">
+        <di:waypoint x="795" y="290" />
+        <di:waypoint x="837" y="290" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="ed_f_timer_to_escalate" bpmnElement="f_timer_to_escalate">
         <di:waypoint x="525" y="248" />
@@ -505,7 +508,7 @@
         <di:waypoint x="940" y="500" />
         <di:waypoint x="1025" y="500" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="955" y="455" width="60" height="40" />
+          <dc:Bounds x="945" y="460" width="70" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="ed_f_gw_to_reject" bpmnElement="f_gw_to_reject">
@@ -513,7 +516,7 @@
         <di:waypoint x="915" y="610" />
         <di:waypoint x="1025" y="610" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="939" y="620" width="83" height="27" />
+          <dc:Bounds x="925" y="580" width="75" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="ed_f_approve_to_install" bpmnElement="f_approve_to_install">
